@@ -2,8 +2,11 @@ import pyspark.sql.functions as f
 from pyspark.sql.window import Window
 import tempo.resample as rs
 import tempo.io as tio
+from pyspark.sql import SparkSession,SQLContext
 
 class TSDF:
+
+  _classpath = 'com.databrickslabs.tempo'
 
   def __init__(self, df, ts_col="event_ts", partition_cols=None, sequence_col = None):
     """
@@ -18,6 +21,20 @@ class TSDF:
 
     self.df = df
     self.sequence_col = '' if sequence_col is None else sequence_col
+    #self.spark = SparkSession.builder.getOrCreate()
+    #self.spark.conf.set("spark.sql.legacy.setCommandRejectsSparkCoreConfs", "false")
+    #self.spark.conf.set("spark.driver.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/")
+    #self.spark.conf.set("spark.executor.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/")
+    #self.spark.conf.set("spark.jars", "file:/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/tempo_2.12-0.1.jar")
+    #self.java_obj = self.spark.sparkContext._jvm
+    # = self.spark._jvm.com.databrickslabs.tempo.TSDF(self, right_tsdf, left_prefix, right_prefix, tsPartitionVal, fraction)
+    self._java_obj = self._new_java_obj(TSDF._classpath, df, self._ts_col, )
+    val
+    tsdf_left = TSDF(dfLeft.withColumn("dummy", lit(10)),
+                     "event_ts",
+                     Seq("symbol", "dummy"))
+
+
     """
     Make sure DF is ordered by its respective ts_col and partition columns.
     """
@@ -201,65 +218,9 @@ class TSDF:
         pass
 
   def asofJoin(self, right_tsdf, left_prefix=None, right_prefix="right", tsPartitionVal=None, fraction=0.5):
-    """
-    Performs an as-of join between two time-series. If a tsPartitionVal is specified, it will do this partitioned by
-    time brackets, which can help alleviate skew.
 
-    NOTE: partition cols have to be the same for both Dataframes.
-    Parameters
-    :param right_tsdf - right-hand data frame containing columns to merge in
-    :param left_prefix - optional prefix for base data frame
-    :param right_prefix - optional prefix for right-hand data frame
-    :param tsPartitionVal - value to break up each partition into time brackets
-    :param fraction - overlap fraction
-    """
-
-    if (tsPartitionVal is not None):
-      print("WARNING: You are using the skew version of the AS OF join. This may result in null values if there are any values outside of the maximum lookback. For maximum efficiency, choose smaller values of maximum lookback, trading off performance and potential blank AS OF values for sparse keys")
-
-    # Check whether partition columns have same name in both dataframes
-    self.__checkPartitionCols(right_tsdf)
-
-    # prefix non-partition columns, to avoid duplicated columns.
-    left_df = self.df
-    right_df = right_tsdf.df
-
-
-    # validate timestamp datatypes match
-    self.__validateTsColMatch(right_tsdf)
-
-    orig_left_col_diff = list(set(left_df.columns).difference(set(self.partitionCols)))
-    orig_right_col_diff = list(set(right_df.columns).difference(set(self.partitionCols)))
-
-    left_tsdf = ((self.__addPrefixToColumns([self.ts_col] + orig_left_col_diff, left_prefix))
-                 if left_prefix is not None else self)
-    right_tsdf = right_tsdf.__addPrefixToColumns([right_tsdf.ts_col] + orig_right_col_diff, right_prefix)
-
-    left_nonpartition_cols = list(set(left_tsdf.df.columns).difference(set(self.partitionCols)))
-    right_nonpartition_cols = list(set(right_tsdf.df.columns).difference(set(self.partitionCols)))
-
-    # For both dataframes get all non-partition columns (including ts_col)
-    left_columns = [left_tsdf.ts_col] + left_nonpartition_cols
-    right_columns = [right_tsdf.ts_col] + right_nonpartition_cols
-
-    # Union both dataframes, and create a combined TS column
-    combined_ts_col = "combined_ts"
-    combined_df = (left_tsdf
-                   .__addColumnsFromOtherDF(right_columns)
-                   .__combineTSDF(right_tsdf.__addColumnsFromOtherDF(left_columns),
-                                  combined_ts_col))
-
-    # perform asof join.
-    if tsPartitionVal is None:
-        asofDF = combined_df.__getLastRightRow(left_tsdf.ts_col, right_columns, right_tsdf.sequence_col, tsPartitionVal)
-    else:
-        tsPartitionDF = combined_df.__getTimePartitions(tsPartitionVal, fraction=fraction)
-        asofDF = tsPartitionDF.__getLastRightRow(left_tsdf.ts_col, right_columns, right_tsdf.sequence_col, tsPartitionVal)
-
-        # Get rid of overlapped data and the extra columns generated from timePartitions
-        df = asofDF.df.filter(f.col("is_original") == 1).drop("ts_partition","is_original")
-
-        asofDF = TSDF(df, asofDF.ts_col, combined_df.partitionCols)
+    #    asofDF = TSDF(df, asofDF.ts_col, combined_df.partitionCols)
+    asofDF = self.spark._jvm.com.databrickslabs.tempo.TSDF.asofJoin(self, right_tsdf, left_prefix, right_prefix, tsPartitionVal, fraction)
 
     return asofDF
 
