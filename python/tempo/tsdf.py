@@ -4,7 +4,7 @@ import tempo.resample as rs
 import tempo.io as tio
 from pyspark.sql import SparkSession,SQLContext
 
-class TSDF:
+class TSDF(pyspark.sql.DataFrame):
 
   _classpath = 'com.databrickslabs.tempo'
 
@@ -28,8 +28,14 @@ class TSDF:
     #self.spark.conf.set("spark.jars", "file:/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/tempo_2.12-0.1.jar")
     #self.java_obj = self.spark.sparkContext._jvm
     # = self.spark._jvm.com.databrickslabs.tempo.TSDF(self, right_tsdf, left_prefix, right_prefix, tsPartitionVal, fraction)
-    self._java_obj = self._new_java_obj(TSDF._classpath, df, self._ts_col, )
-    val
+    spark = SparkSession \
+        .builder \
+        .appName("Python Spark SQL basic example") \
+        .getOrCreate()
+    self._jdf = df._jdf
+    super().__init__(self.jdf, spark)
+
+    #self._java_obj = self._new_java_obj(TSDF._classpath, df, self._ts_col, )
     tsdf_left = TSDF(dfLeft.withColumn("dummy", lit(10)),
                      "event_ts",
                      Seq("symbol", "dummy"))
