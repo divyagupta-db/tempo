@@ -4,7 +4,7 @@ import tempo.resample as rs
 import tempo.io as tio
 from pyspark.sql import SparkSession,SQLContext
 
-class TSDF(pyspark.sql.DataFrame):
+class TSDF():
 
   _classpath = 'com.databrickslabs.tempo'
 
@@ -33,12 +33,12 @@ class TSDF(pyspark.sql.DataFrame):
         .appName("Python Spark SQL basic example") \
         .getOrCreate()
     self._jdf = df._jdf
-    super().__init__(self.jdf, spark)
+    #super().__init__(self._jdf, spark)
 
     #self._java_obj = self._new_java_obj(TSDF._classpath, df, self._ts_col, )
-    tsdf_left = TSDF(dfLeft.withColumn("dummy", lit(10)),
-                     "event_ts",
-                     Seq("symbol", "dummy"))
+    #tsdf_left = TSDF(dfLeft.withColumn("dummy", lit(10)),
+    #                 "event_ts",
+    #                 Seq("symbol", "dummy"))
 
 
     """
