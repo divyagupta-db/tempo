@@ -229,21 +229,15 @@ class TSDF():
 
   def asofJoin(self, right_tsdf, left_prefix=None, right_prefix="right", tsPartitionVal=None, fraction=0.5):
 
-    from py4j.java_collections import SetConverter, MapConverter, ListConverter
-    from py4j.java_gateway import JavaGateway
-    from py4j.java_gateway import JavaClass
-    #gateway = JavaGateway()
-    #mypythonlist = ['symbol', 'dummy']
-    #object_class = gateway.jvm.java.lang.String
-    #MyJavaArray = gateway.new_array(object_class, len(mypythonlist))
 
     from py4j.java_collections import JavaArray
     object_class = self.spark.sparkContext._jvm.java.lang.String
     java_array = self.spark.sparkContext._gateway.new_array(object_class, 2)
     java_array[0] = 'dummy'
+    scala_seq = self.spark.sparkContext._jvm.PythonUtils.toSeq(['symbol', 'dummy'])
 
     left_jvm_df = self.spark._jvm.com.databrickslabs.tempo.TSDF(self.df.withColumn("dummy", f.lit(10))._jdf,
-                     "event_ts", java_array)
+                     "event_ts", scala_seq)
     left_jvm_df.show(10, False)
     right_jvm_df = self.spark._jvm.com.databrickslabs.tempo.TSDF(right_tsdf.withColumn("dummy", f.lit(10)),
                       "event_ts", java_array)
