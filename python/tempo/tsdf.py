@@ -2,7 +2,9 @@ import pyspark.sql.functions as f
 from pyspark.sql.window import Window
 import tempo.resample as rs
 import tempo.io as tio
+
 from pyspark.sql import SparkSession,SQLContext
+from array import array
 
 class TSDF():
 
@@ -23,7 +25,6 @@ class TSDF():
     self.sequence_col = '' if sequence_col is None else sequence_col
     #self.spark = SparkSession.builder.getOrCreate()
     #self.spark.conf.set("spark.sql.legacy.setCommandRejectsSparkCoreConfs", "false")
-    #self.spark.conf.set("spark.driver.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/")
     #self.spark.conf.set("spark.executor.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/")
     #self.spark.conf.set("spark.jars", "file:/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/tempo_2.12-0.1.jar")
     #self.java_obj = self.spark.sparkContext._jvm
@@ -31,8 +32,11 @@ class TSDF():
     spark = SparkSession \
         .builder \
         .appName("Python Spark SQL basic example") \
+        .config("spark.driver.extraClassPath",
+                "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/tempo_2.12-0.1.jar") \
         .getOrCreate()
     self._jdf = df._jdf
+    self.spark = spark
     #super().__init__(self._jdf, spark)
 
     #self._java_obj = self._new_java_obj(TSDF._classpath, df, self._ts_col, )
@@ -225,8 +229,25 @@ class TSDF():
 
   def asofJoin(self, right_tsdf, left_prefix=None, right_prefix="right", tsPartitionVal=None, fraction=0.5):
 
-    #    asofDF = TSDF(df, asofDF.ts_col, combined_df.partitionCols)
-    asofDF = self.spark._jvm.com.databrickslabs.tempo.TSDF.asofJoin(self, right_tsdf, left_prefix, right_prefix, tsPartitionVal, fraction)
+    from py4j.java_collections import SetConverter, MapConverter, ListConverter
+    from py4j.java_gateway import JavaGateway
+    from py4j.java_gateway import JavaClass
+    #gateway = JavaGateway()
+    #mypythonlist = ['symbol', 'dummy']
+    #object_class = gateway.jvm.java.lang.String
+    #MyJavaArray = gateway.new_array(object_class, len(mypythonlist))
+
+    from py4j.java_collections import JavaArray
+    object_class = self.spark.sparkContext._jvm.java.lang.String
+    java_array = self.spark.sparkContext._gateway.new_array(object_class, 2)
+    java_array[0] = 'dummy'
+
+    left_jvm_df = self.spark._jvm.com.databrickslabs.tempo.TSDF(self.df.withColumn("dummy", f.lit(10))._jdf,
+                     "event_ts", java_array)
+    left_jvm_df.show(10, False)
+    right_jvm_df = self.spark._jvm.com.databrickslabs.tempo.TSDF(right_tsdf.withColumn("dummy", f.lit(10)),
+                      "event_ts", java_array)
+    asofDF = left_jvm_df.asofJoin(right_jvm_df, "left_")
 
     return asofDF
 

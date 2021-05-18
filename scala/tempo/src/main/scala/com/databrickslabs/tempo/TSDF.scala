@@ -182,7 +182,7 @@ private[tempo] sealed class BaseTSDF(val df: DataFrame,
 	// Define some other values
 
 	/**
-	 * Is this [[TSDF]] partitioned?
+	 * Is this [[TSDF]] partitioned?	
 	 */
 	val isPartitioned: Boolean = partitionCols.nonEmpty
 

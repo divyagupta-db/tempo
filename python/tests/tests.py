@@ -16,7 +16,7 @@ class SparkTest(unittest.TestCase):
                       .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
                       .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
                       .config("spark.sql.legacy.setCommandRejectsSparkCoreConfs", "false") \
-                      .config("spark.driver.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/") \
+                      .config("spark.driver.extraClassPath", "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/tempo_2.12-0.1.jar") \
                       .config("spark.executor.extraClassPath",
                             "/users/rportilla/downloads/ts/tempo/scala/tempo/target/scala-2.12/") \
                       .config("spark.jars",
